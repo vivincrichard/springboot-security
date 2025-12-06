@@ -34,4 +34,14 @@ public class UserController {
     public String login(@RequestBody Users user){
         return userService.verify(user);
     }
+
+    @GetMapping("/admin/dashboard")
+    public String adminPage() {
+        return "Admin access OK";
+    }
+    @GetMapping("/users/me")
+    public String userDashboard() {
+        return "User access OK";
+    }
+
 }
