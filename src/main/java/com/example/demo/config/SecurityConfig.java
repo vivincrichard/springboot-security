@@ -50,29 +50,9 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // In-Memory
-//    @Bean
-//    public UserDetailsService userDetailsService() {
-//        UserDetails user1 = User
-//                .withDefaultPasswordEncoder()
-//                .username("appa")
-//                .password("appa")
-//                .roles("USER")
-//                .build();
-//
-//        UserDetails user2 = User
-//                .withDefaultPasswordEncoder()
-//                .username("amma")
-//                .password("amma")
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(user1,user2);
-//    }
-
     @Bean
     public  AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-//        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
         provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
         provider.setUserDetailsService(userDetailsService);
         return provider;
