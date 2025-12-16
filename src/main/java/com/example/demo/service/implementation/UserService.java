@@ -30,8 +30,19 @@ public class UserService implements UserServiceInterface {
     @Override
     public Users register(Users user) {
         user.setPassword(encoder.encode(user.getPassword()));
+
+        // Automatically assign default role
+        if (user.getRole() == null) {
+            user.setRole("ROLE_USER");
+        }
+        else {
+            // If user sends "ADMIN", convert to "ROLE_ADMIN"
+            user.setRole("ROLE_" + user.getRole().toUpperCase());
+        }
+
         return userRepository.save(user);
     }
+
 
     @Override
     public List<Users> getAll() {
@@ -42,9 +53,12 @@ public class UserService implements UserServiceInterface {
     public String verify(Users user) {
         Authentication authentication =
                 authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(),user.getPassword()));
+
         if(authentication.isAuthenticated()) {
-            return jwtService.generateToken(user.getUsername());
+            Users dbUser = userRepository.findByUsername(user.getUsername()).get();
+            return jwtService.generateToken(dbUser.getUsername(), dbUser.getRole());
         }
+
         return "failed";
     }
 }
