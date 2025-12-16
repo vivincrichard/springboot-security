@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.model.Users;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserServiceInterface {
     Users register(Users user);
@@ -10,5 +11,5 @@ public interface UserServiceInterface {
     List<Users> getAll();
 
 
-    String verify(Users user);
+    Map<String, String> verify(Users user); // <-- changed from String to Map
 }
