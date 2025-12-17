@@ -44,16 +44,6 @@ public class JWTService {
                 .compact();
     }
 
-    // Generate refresh token
-    public String generateRefreshToken(String username) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenValidity))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
     // Extract username
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();

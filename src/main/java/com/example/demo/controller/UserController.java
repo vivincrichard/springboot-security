@@ -32,10 +32,6 @@ public class UserController {
         return userService.getAll();
     }
 
-//    @PostMapping("/login")
-//    public String login(@RequestBody Users user){
-//        return userService.verify(user);
-//    }
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody Users user){
