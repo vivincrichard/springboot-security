@@ -34,7 +34,7 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Users user){
+    public ResponseEntity<?> login(@RequestBody Users user) {
         Map<String, String> tokens = userService.verify(user);
         return ResponseEntity.ok(tokens);
     }

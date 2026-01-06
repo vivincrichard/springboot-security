@@ -14,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -55,33 +56,53 @@ public class UserService implements UserServiceInterface {
 
     @Override
     public Map<String, String> verify(Users user) {
-        Authentication authentication =
-                authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
-        if (authentication.isAuthenticated()) {
-            Users dbUser = userRepository.findByUsername(user.getUsername()).get();
-
-            // Generate access token (JWT)
-            String accessToken = jwtService.generateAccessToken(dbUser.getUsername(), dbUser.getRole());
-
-            // Generate random UUID refresh token
-            String refreshTokenStr = UUID.randomUUID().toString();
-
-            // Save refresh token in DB
-            RefreshToken refreshToken = new RefreshToken();
-            refreshToken.setToken(refreshTokenStr);
-            refreshToken.setUser(dbUser);
-            refreshToken.setExpiryDate(Instant.now().plusMillis(2 * 60 * 1000L)); // 7 days
-            refreshTokenRepository.save(refreshToken);
-
-            Map<String, String> tokens = new HashMap<>();
-            tokens.put("accessToken", accessToken);
-            tokens.put("refreshToken", refreshTokenStr);
-            return tokens;
+        // 1️⃣ Validation check
+        if (!StringUtils.hasText(user.getUsername())
+                || !StringUtils.hasText(user.getPassword())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Username and password required"
+            );
         }
 
-        throw new BadCredentialsException("Invalid credentials");
+        // 2️⃣ DB lookup (username/email not found)
+        Users dbUser = userRepository.findByUsername(user.getUsername())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.UNAUTHORIZED,
+                                "Invalid credentials"
+                        )
+                );
+
+        // 3️⃣ Password check
+        if (!encoder.matches(user.getPassword(), dbUser.getPassword())) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid credentials"
+            );
+        }
+
+        // 4️⃣ Generate tokens
+        String accessToken = jwtService.generateAccessToken(dbUser.getUsername(),dbUser.getRole());
+
+        String refreshTokenStr = UUID.randomUUID().toString();
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setToken(refreshTokenStr);
+        refreshToken.setUser(dbUser);
+        refreshToken.setExpiryDate(
+                Instant.now().plusMillis(2 * 60 * 1000L)
+        );
+        refreshTokenRepository.save(refreshToken);
+
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("accessToken", accessToken);
+        tokens.put("refreshToken", refreshTokenStr);
+
+        return tokens;
     }
+
 
     public Map<String, String> refreshToken(String refreshTokenStr) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenStr)
