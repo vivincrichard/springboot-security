@@ -2,6 +2,7 @@ package com.example.demo.service.implementation;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,66 +18,66 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+// new code
 @Service
 public class JWTService {
 
-    private String secretKey = "";
+//    private final long accessTokenValidity = 15 * 60 * 1000; // 15 mins
+//    private final long refreshTokenValidity = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-    public JWTService() {
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
-            SecretKey key = keyGen.generateKey();
-            secretKey = Base64.getEncoder().encodeToString(key.getEncoded());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+    private final long accessTokenValidity = 1 * 60 * 1000; // 1 minute
+    private final long refreshTokenValidity = 2 * 60 * 1000; // 2 minutes
+
+    private final String SECRET = "this-is-a-very-long-secret-key-1234567890"; // >=32 chars
+
+    private Key getKey() {
+        return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
-
-    public String generateToken(String username) {
-
-        Map<String, Object> claims = new HashMap<>();
-
+    // Generate access token
+    public String generateAccessToken(String username, String role) {
         return Jwts.builder()
-                .claims()
-                .add(claims)
-                .subject(username)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 60 * 60 * 30))
-                .and()
-                .signWith(getKey())
+                .setSubject(username)   //JWT-la Subject (sub) nu oru field irukkum. Adhu dhaan andha token yarudhu nu sollum. Inga namma User-oda Username-ah set pandrom. Idhu dhaan token-oda identity.
+                .claim("role", role)    //Claims-na "thagaval" (information). subject illama neenga extra-va enna information venum nalum claim-ah add pannikkalam. Inga namma user-oda Role (e.g., ADMIN, USER) ah add pandrom.
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenValidity))
+                .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    private SecretKey getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
-
+    // Extract username
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return extractAllClaims(token).getSubject();
     }
 
-    private <T> T extractClaim(String token, Function<Claims,T> claimResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimResolver.apply(claims);
+    // Extract role
+    public String extractRole(String token) {
+        return extractAllClaims(token).get("role", String.class);
     }
 
+    // Extract all claims
+    //ippo andha token-ah thirandhu adhukulla enna irukku nu paakanumla? Adhuku dhaan indha method.
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getKey())
-                .build().parseSignedClaims(token).getPayload();
+                .setSigningKey(getKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
+//    -> setSigningKey(getKey())
+//          Idhu dhaan romba mukkiyamaana step. Token-ah pirikkurathuku munnadi, andha token valid-ah nu check panna namma Secret Key-ah kudukkirom.
+//          Logic: Token create panna use panna adhe key-ah inga kudutha dhaan, parser-ala andha signature-ah verify panna mudiyum. Key match aagalana, ingaye Error (Exception) adichidum
+//    -> .parseClaimsJws(token)
+//          Namma kudukkura String token-ah eduthu, signature match aagudha nu check panni, adhukulla irukka Header, Payload, Signature-ah pirikkudhu.
+//          Note: Oru vela token expired aayirundhalum, illana yaravadhu token-ah mathi irundhalum, indha line-la dhaan application "Invalid Token"-nu kandupidiikkum.
 
+    // Validate token
     public boolean validateToken(String token, UserDetails userDetails) {
-        final String userName = extractUsername(token);
-        return (userName.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        final String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        return extractAllClaims(token).getExpiration().before(new Date());
     }
 }
+

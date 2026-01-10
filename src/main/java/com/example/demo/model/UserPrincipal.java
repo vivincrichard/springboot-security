@@ -26,10 +26,16 @@ public class UserPrincipal implements UserDetails {
         return user.getPassword();
     }
 
+//    @Override
+//    public Collection<? extends GrantedAuthority> getAuthorities() {
+//        return Collections.singleton(new SimpleGrantedAuthority("USER"));
+//    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority("USER"));
+        return List.of(new SimpleGrantedAuthority(user.getRole()));
     }
+
 
     @Override
     public boolean isAccountNonExpired() {
