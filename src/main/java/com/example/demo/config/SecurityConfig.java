@@ -25,10 +25,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Autowired
-    private UserDetailsService userDetailsService;
+    private UserDetailsService userDetailsService;  //Database-la irunthu user details (username, password, roles) edukkura logic intha service-la thaan irukkum.
 
     @Autowired
-    private JwtFilter jwtFilter;
+    private JwtFilter jwtFilter;    //Ovvoru request varum pothum ulla 'Token' irukka, athu valid-ah nu check panna intha filter-ah use panrom.
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -44,14 +44,14 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);    //Spring-oda default login filter-ku munnadiye namma jwtFilter-ah ulla nulaikirom. So, user details check panrathukku munnadiye Token check aagidum.
 
 
         return http.build();
     }
 
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
+    public BCryptPasswordEncoder passwordEncoder() {    //User password-ah database-la apdiye plain text-ah save panna koodathu (security risk) so hash pannurom.
         return new BCryptPasswordEncoder(12);
     }
 
@@ -63,12 +63,15 @@ public class SecurityConfig {
         return provider;
     }
 
+    //DaoAuthenticationProvider use panni, userDetailsService moolama DB-la irunthu user-ah eduthu, passwordEncoder vechu password match aagutha nu check pannum.
+
     // AuthenticationManager talks to the AuthenticationProvider
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-
+    //Ithu thaan "Boss". Login process-ah mothama handle pannum.
+    //Login controller-la user credentials-ah check panna namma intha AuthenticationManager-ah thaan call pannuvom.
 
 
 }

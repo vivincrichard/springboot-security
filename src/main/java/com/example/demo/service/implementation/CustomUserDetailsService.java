@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.List;
 
 
+//Database-la namma Users nu oru table vachirupom. Aana Spring Security-ku puriyura language UserDetails. Namma table-la irukura data-vah Spring-ku puriyura UserDetails format-ku maathi kudukka thaan intha class use aaguthu.
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -29,11 +30,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         Collection<GrantedAuthority> authorities =
                 List.of(new SimpleGrantedAuthority(user.getRole()));
+        //Namma table-la "ADMIN" nu irukura String-ah, Spring Security-ku puriyura GrantedAuthority type-ku mathurom. Itha vachu thaan Spring user-oda permissions-ah decide pannum.
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
                 authorities
         );
+        //Ithu thaan final product. Database-la irunthu edutha username, password, and roles-ah vachu Spring Security-oda internal User object-ah create panni tharrom.
     }
 }

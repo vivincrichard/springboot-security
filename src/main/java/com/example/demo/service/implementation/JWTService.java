@@ -36,8 +36,8 @@ public class JWTService {
     // Generate access token
     public String generateAccessToken(String username, String role) {
         return Jwts.builder()
-                .setSubject(username)
-                .claim("role", role)
+                .setSubject(username)   //JWT-la Subject (sub) nu oru field irukkum. Adhu dhaan andha token yarudhu nu sollum. Inga namma User-oda Username-ah set pandrom. Idhu dhaan token-oda identity.
+                .claim("role", role)    //Claims-na "thagaval" (information). subject illama neenga extra-va enna information venum nalum claim-ah add pannikkalam. Inga namma user-oda Role (e.g., ADMIN, USER) ah add pandrom.
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessTokenValidity))
                 .signWith(getKey(), SignatureAlgorithm.HS256)
@@ -55,6 +55,7 @@ public class JWTService {
     }
 
     // Extract all claims
+    //ippo andha token-ah thirandhu adhukulla enna irukku nu paakanumla? Adhuku dhaan indha method.
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .setSigningKey(getKey())
@@ -62,6 +63,12 @@ public class JWTService {
                 .parseClaimsJws(token)
                 .getBody();
     }
+//    -> setSigningKey(getKey())
+//          Idhu dhaan romba mukkiyamaana step. Token-ah pirikkurathuku munnadi, andha token valid-ah nu check panna namma Secret Key-ah kudukkirom.
+//          Logic: Token create panna use panna adhe key-ah inga kudutha dhaan, parser-ala andha signature-ah verify panna mudiyum. Key match aagalana, ingaye Error (Exception) adichidum
+//    -> .parseClaimsJws(token)
+//          Namma kudukkura String token-ah eduthu, signature match aagudha nu check panni, adhukulla irukka Header, Payload, Signature-ah pirikkudhu.
+//          Note: Oru vela token expired aayirundhalum, illana yaravadhu token-ah mathi irundhalum, indha line-la dhaan application "Invalid Token"-nu kandupidiikkum.
 
     // Validate token
     public boolean validateToken(String token, UserDetails userDetails) {
